@@ -31,9 +31,11 @@ public class EliminateButton : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        SetCounter();
         wordGuessManager = GameManager.Instance.wordGuessManager;
         keyboard = wordGuessManager.KeyboardButtons;
         GameManager.Instance.OnNewWord += ResetButton;
+        GameManager.Instance.OnTextChanged += SetCounter;
     }
 
     public void ResetButton()
@@ -44,8 +46,14 @@ public class EliminateButton : MonoBehaviour
     
     public void SetCounter()
     {
+        int endValue = GameManager.Instance.EliminationsAvailable;
+        countText.DOText(endValue.ToString(), 0.25f);
+        button.GetComponent<Image>().sprite = (endValue == 0 || limitReached) ? inactiveSprite : activeSprite;
+    }
+    
+    void SetText()
+    {
         countText.text = GameManager.Instance.EliminationsAvailable.ToString();
-        button.GetComponent<Image>().sprite = countText.text == "0" ? inactiveSprite : activeSprite;
     }
 
     public void EliminateLetters(int numberOfLetters)
@@ -55,6 +63,12 @@ public class EliminateButton : MonoBehaviour
         int index = 0;
         List<string> keys = keyboard.Keys.ToList();
         
+        if (GameManager.Instance.EliminationsAvailable >= 0 && limitReached)
+        {
+            NotificationsManager.Instance.SpawnMessage(0);
+            return;
+        }
+        
         if ((!GameManager.Instance.devMode && GameManager.Instance.EliminationsAvailable <= 0))
         {
             //PopupManager.Instance.OpenPopup(3);
@@ -63,12 +77,6 @@ public class EliminateButton : MonoBehaviour
             return;
         }
 
-        if (GameManager.Instance.EliminationsAvailable > 0 && limitReached)
-        {
-            NotificationsManager.Instance.SpawnNotification(2);
-            return;
-        }
-        
         if (wordGuessManager.EliminationCount + numberOfLetters + 5 >= keys.Count)
         {
             print("not enough letters " + wordGuessManager.EliminationCount + " " + keys.Count);
@@ -117,6 +125,6 @@ public class EliminateButton : MonoBehaviour
         seq.Join(keyboard[key].GetComponent<RectTransform>().DOPunchScale(new Vector3(0.1f, 0.1f, 0.1f), 0.1f, 10, 10));
         seq.AppendInterval(0.25f);
         seq.Append(arrow.GetComponent<Image>().DOFade(0, 0.25f));
-        seq.onComplete += () => arrow.SetActive(false);
+        seq.onComplete += () => Destroy(arrow);
     }
 }

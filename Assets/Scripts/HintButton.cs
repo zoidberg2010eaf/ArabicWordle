@@ -27,10 +27,18 @@ public class HintButton : MonoBehaviour
 
     private void Start()
     {
+        SetCounter();
         wordGuessManager = GameManager.Instance.wordGuessManager;
         //countText.text = GameManager.Instance.HintsAvailable.ToString();
         GameManager.Instance.OnNewWord += ResetButton;
+        GameManager.Instance.OnTextChanged += SetCounter;
     }
+    
+    void SetText()
+    {
+        countText.text = GameManager.Instance.HintsAvailable.ToString();
+    }
+
     
     public void ResetButton()
     {
@@ -40,8 +48,9 @@ public class HintButton : MonoBehaviour
 
     public void SetCounter()
     {
-        countText.text = GameManager.Instance.HintsAvailable.ToString();
-        button.GetComponent<Image>().sprite = countText.text == "0" ? inactiveSprite : activeSprite;
+        int endValue = GameManager.Instance.HintsAvailable;
+        countText.DOText(endValue.ToString(), 0.25f);
+        button.GetComponent<Image>().sprite = (endValue == 0 || limitReached) ? inactiveSprite : activeSprite;
     }
 
     public void SetInteractable(bool interactable)
@@ -51,6 +60,12 @@ public class HintButton : MonoBehaviour
 
     public void ShowHint()
     {
+        if (GameManager.Instance.HintsAvailable >= 0 && limitReached)
+        {
+            NotificationsManager.Instance.SpawnMessage(0);
+            return;
+        }
+        
         if ((!GameManager.Instance.devMode && GameManager.Instance.HintsAvailable <= 0))
         {
             //PopupManager.Instance.OpenPopup(3);
@@ -59,11 +74,7 @@ public class HintButton : MonoBehaviour
             return;
         }
         
-        if (GameManager.Instance.HintsAvailable > 0 && limitReached)
-        {
-            NotificationsManager.Instance.SpawnNotification(2);
-            return;
-        }
+        
         
         if (wordGuessManager.lettersHinted.Count <= 0)
         {

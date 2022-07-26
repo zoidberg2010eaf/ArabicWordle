@@ -1,8 +1,10 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using DG.Tweening;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 public class Store : Page
 {
@@ -12,16 +14,29 @@ public class Store : Page
     public CanvasGroup coinsCanvasGroup;
     public CanvasGroup boostersCanvasGroup;
     
+    public TextMeshProUGUI coinsText;
+    public TextMeshProUGUI hintText;
+    public TextMeshProUGUI eliminationText;
+    
     // Start is called before the first frame update
     void Start()
     {
         coinsButton.interactable = false;
+        SetText();
+        GameManager.Instance.OnTextChanged += SetText;
+    }
+
+    private void Update()
+    {
+        
     }
 
     // Update is called once per frame
-    void Update()
+    void SetText()
     {
-        
+        coinsText.DOText(GameManager.Instance.CoinsAvailable.ToString(), 0.25f);
+        eliminationText.DOText(GameManager.Instance.EliminationsAvailable.ToString(), 0.25f);
+        hintText.DOText(GameManager.Instance.HintsAvailable.ToString(), 0.25f);
     }
 
     public void SetActiveTab(int tab)

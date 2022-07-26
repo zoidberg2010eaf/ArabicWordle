@@ -23,6 +23,8 @@ public class GameManager : Singleton<GameManager>, IStateManageable
     public string CurrentWord { get; set; } = String.Empty;
     public string CurrentWordSimplified { get; set; } = String.Empty;
     public BaseState CurrentState { get; private set; }
+    
+    public int NewUser { get; private set; }
 
     public Color backgroundColor;
     
@@ -30,16 +32,62 @@ public class GameManager : Singleton<GameManager>, IStateManageable
     public UnityAction OnNewWord;
     public UnityAction OnGameWon;
     public UnityAction OnGameLost;
+    public UnityAction OnItemBought;
+    public UnityAction OnTextChanged;
 
     //Player Properties
-    public int CoinsAvailable { get; set; } = 0;
-    public int HintsAvailable { get; set; } = 6;
-    public int EliminationsAvailable { get; set; } = 6;
+    private int coins;
+    private int hints;
+    private int eliminations;
+
+    public int interstitialFreq = 2;
+    public int GamesWon { get; set; }
+
+    public int CoinsAvailable
+    {
+        get => coins;
+        set
+        {
+            coins = value;
+            PlayerPrefs.SetInt("Coins", coins);
+            OnTextChanged?.Invoke();
+        }
+    }
+
+    public int HintsAvailable
+    {
+        get => hints;
+        set
+        {
+            hints = value;
+            PlayerPrefs.SetInt("Hints", hints);
+            OnTextChanged?.Invoke();
+        }
+    }
+
+    public int EliminationsAvailable
+    {
+        get => eliminations;
+        set
+        {
+            eliminations = value;
+            PlayerPrefs.SetInt("Eliminations", eliminations);
+            OnTextChanged?.Invoke();
+        }
+    }
+    
+    public int startingCoins = 100;
+    public int startingHints = 3;
+    public int startingEliminations = 3;
+
+    public int coinsPerGame = 60;
+    public int decreasePerRow = 10;
     
     public int hintLimit = 3;
     [HideInInspector] public int timesHintUsed = 0;
     public int eliminationLimit = 3;
     [HideInInspector] public int timesEliminationUsed = 0;
+    
 
 
     
@@ -55,13 +103,32 @@ public class GameManager : Singleton<GameManager>, IStateManageable
     // Start is called before the first frame update
     void Start()
     {
-        
+        NewUser = PlayerPrefs.GetInt("NewUser", 0);
+        if (!devMode)
+        {
+            if (NewUser == 0)
+            {
+                PlayerPrefs.SetInt("NewUser", 1);
+                PlayerPrefs.SetInt("Coins", startingCoins);
+                PlayerPrefs.SetInt("Hints", startingHints);
+                PlayerPrefs.SetInt("Eliminations", startingEliminations);
+            }
+            CoinsAvailable = PlayerPrefs.GetInt("Coins");
+            HintsAvailable = PlayerPrefs.GetInt("Hints");
+            EliminationsAvailable = PlayerPrefs.GetInt("Eliminations");
+        }
+        else
+        {
+            CoinsAvailable = 1000;
+            HintsAvailable = 10;
+            EliminationsAvailable = 10;
+        }
+
+
         score = PlayerPrefs.GetInt("Score");
         highScore = PlayerPrefs.GetInt("HighScore");
         SwitchState("menu");
         //Gley
-        //Advertisements.Instance.Initialize();
-        //Advertisements.Instance.ShowBanner(BannerPosition.BOTTOM, BannerType.SmartBanner);
         AdsManager.Instance.InitializeAds();
         OnNewWord += RandomColor;
         AdsManager.Instance.LoadBanner();
@@ -81,7 +148,6 @@ public class GameManager : Singleton<GameManager>, IStateManageable
     void Update()
     {
         CurrentState.UpdateState(this);
-        print(CurrentState.stateName);
     }
 
     public void Proceed()

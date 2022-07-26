@@ -76,6 +76,9 @@ public class WordGuessManager : MonoBehaviour
     private List<Image> glowImages = new();
     public int EliminationCount { get; set; } = 0;
 
+    public int coinsWon;
+    public int coinsDecrease;
+
     private void Awake()
     {
         foreach (Transform row in keyboard.GetChild(0))
@@ -126,6 +129,7 @@ public class WordGuessManager : MonoBehaviour
 
     void GameWon()
     {
+        GameManager.Instance.GamesWon++;
         GameManager.Instance.score++;
         if(GameManager.Instance.score > GameManager.Instance.highScore)
         {
@@ -138,10 +142,17 @@ public class WordGuessManager : MonoBehaviour
         {
             PopupManager.Instance.OpenPopup(1);
             GameManager.Instance.OnGameWon?.Invoke();
+            if (GameManager.Instance.GamesWon % GameManager.Instance.interstitialFreq == 0)
+            {
+                AdsManager.Instance.ShowInterstitial();
+            }
         };
+
+        GameManager.Instance.CoinsAvailable += coinsWon - coinsDecrease * rowIndex;
         //PopupManager.Instance.OpenPopup(1);
         //GameManager.Instance.OnGameWon?.Invoke();
         PlayerPrefs.Save();
+        
     }
 
     void GameLost()
@@ -153,6 +164,7 @@ public class WordGuessManager : MonoBehaviour
             GameManager.Instance.OnGameLost?.Invoke();
             GameManager.Instance.ResetScore();
         };
+        AdsManager.Instance.ShowInterstitial();
         //PopupManager.Instance.OpenPopup(2);
         //GameManager.Instance.OnGameLost?.Invoke();
     }
@@ -181,8 +193,8 @@ public class WordGuessManager : MonoBehaviour
         GameManager.Instance.CurrentWord = currentWord;
         GameManager.Instance.CurrentWordSimplified = currentWordSimplified;
         GameManager.Instance.OnNewWord?.Invoke();
-        
-        
+        coinsWon = GameManager.Instance.coinsPerGame;
+        coinsDecrease = GameManager.Instance.decreasePerRow;
     }
 
     private bool WordNotInDictionary()

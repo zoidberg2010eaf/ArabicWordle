@@ -758,7 +758,10 @@ PlayerSettings:
   webGLLinkerTarget: 1
   webGLThreadsSupport: 0
   webGLDecompressionFallback: 0
-  scriptingDefineSymbols: {}
+  scriptingDefineSymbols:
+    Android: USE_UNITYADS
+    Windows Store Apps: 
+    iPhone: USE_UNITYADS
   additionalCompilerArguments: {}
   platformArchitecture: {}
   scriptingBackend:

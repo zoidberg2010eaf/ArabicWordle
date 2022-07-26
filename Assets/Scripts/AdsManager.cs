@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Advertisements;
 using UnityEngine.Events;
+using UnityEngine.PlayerLoop;
+using UnityEngine.UI;
 
 public class AdsManager : Singleton<AdsManager>, IUnityAdsInitializationListener, IUnityAdsLoadListener, IUnityAdsShowListener
 {
@@ -25,6 +27,8 @@ public class AdsManager : Singleton<AdsManager>, IUnityAdsInitializationListener
     private string bannerId;
     private string interstitialId;
     private string rewardId;
+
+    public Button rewardButton;
 
     // Start is called before the first frame update
     public void InitializeAds()
@@ -59,9 +63,36 @@ public class AdsManager : Singleton<AdsManager>, IUnityAdsInitializationListener
         Advertisement.Banner.Show(bannerId, bannerOptions);
     }
     
+    public void LoadInterstitial()
+    {
+        print("Loading Interstitial");
+        Advertisement.Load(interstitialId, this);
+    }
+    
+    public void ShowInterstitial()
+    {
+        print("Showing Interstitial");
+        Advertisement.Show(interstitialId, this);
+    }
+
+    public void LoadRewarded()
+    {
+        print("Loading Rewarded");
+        Advertisement.Load(rewardId, this);
+    }
+    
+    public void ShowRewarded()
+    {
+        print("Showing Rewarded");
+        Advertisement.Show(rewardId, this);
+    }
+    
     public void OnInitializationComplete()
     {
         print("Ads initialized");
+        LoadBanner();
+        LoadInterstitial();
+        LoadRewarded();
     }
 
     public void OnInitializationFailed(UnityAdsInitializationError error, string message)
@@ -97,31 +128,58 @@ public class AdsManager : Singleton<AdsManager>, IUnityAdsInitializationListener
 
     public void OnUnityAdsAdLoaded(string placementId)
     {
-        throw new System.NotImplementedException();
+        if (placementId.Equals(rewardId))
+        {
+            print("Rewarded loaded");
+            rewardButton.interactable = true;
+            //owRewarded();
+        }
+        else if(placementId.Equals(interstitialId))
+        {
+             print("Interstitial loaded");
+             //ShowInterstitial();
+        }
     }
 
     public void OnUnityAdsFailedToLoad(string placementId, UnityAdsLoadError error, string message)
     {
-        throw new System.NotImplementedException();
+        if (placementId.Equals(rewardId))
+        {
+            rewardButton.interactable = false;
+        }
+        print("interstitial failed loading");
     }
 
     public void OnUnityAdsShowFailure(string placementId, UnityAdsShowError error, string message)
     {
-        throw new System.NotImplementedException();
+        print("interstitial show failed");
     }
 
     public void OnUnityAdsShowStart(string placementId)
     {
-        throw new System.NotImplementedException();
+        //throw new System.NotImplementedException();
     }
 
     public void OnUnityAdsShowClick(string placementId)
     {
-        throw new System.NotImplementedException();
+        //throw new System.NotImplementedException();
     }
 
     public void OnUnityAdsShowComplete(string placementId, UnityAdsShowCompletionState showCompletionState)
     {
-        throw new System.NotImplementedException();
+        if (placementId.Equals(rewardId) && showCompletionState == UnityAdsShowCompletionState.COMPLETED)
+        {
+            print("user should claim reward");
+            GameManager.Instance.CoinsAvailable += 25;
+            rewardButton.interactable = false;
+            LoadRewarded();
+        }
+        else if (placementId.Equals(interstitialId))
+        {
+            
+            LoadInterstitial();
+        }
     }
+    
+    
 }
