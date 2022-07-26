@@ -1,11 +1,14 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Events;
 using TMPro;
 using DG.Tweening;
+using Random = UnityEngine.Random;
 
 public enum InGameState
 {
@@ -41,6 +44,9 @@ public class WordGuessManager : MonoBehaviour
     public Color inPlaceColor = new Color32(83, 141, 78, 255);
     public Color inWordColor = new Color32(181, 159, 59, 255);
     public Color notInWordColor = new Color32(42, 42, 42, 255);
+    public Color hintColor;
+    public Color hintTextColor;
+    public Image hintGlow;
     public Sprite defaultWordImage;
     public Sprite wordImage;
 
@@ -52,7 +58,7 @@ public class WordGuessManager : MonoBehaviour
     private string currentWord = "";
     private string currentWordSimplified = "";
     private string enteredWord = "";
-    private int rowIndex = 0;
+    public int rowIndex { get; private set; } = 0;
 
     private bool wordGuessed, outOfTrials;
     public InGameState CurrentState, pastState;
@@ -60,10 +66,15 @@ public class WordGuessManager : MonoBehaviour
     
 
     public Transform keyboard;
-    private Dictionary<string, Button> _keyboardButtons = new Dictionary<string, Button>();
+    public Dictionary<string, Button> KeyboardButtons = new Dictionary<string, Button>();
     public EnterButton enterButton;
     
     public bool incorrectWord = false;
+    
+    public List<int> lettersHinted;
+    public bool hintCalled;
+    private List<Image> glowImages = new();
+    public int EliminationCount { get; set; } = 0;
 
     private void Awake()
     {
@@ -71,9 +82,9 @@ public class WordGuessManager : MonoBehaviour
         {
             foreach (Button but in row.GetComponentsInChildren<Button>())
             {
-                if (but.name == "Enter" || but.name == "Back") continue;
+                if (but.name == "Enter" || but.name == "Back" || but.name == "Hint" || but.name == "Eliminate") continue;
                 but.GetComponentInChildren<TextMeshProUGUI>().color = keyboardDefaultTextColor;
-                _keyboardButtons.Add(but.name, but);
+                KeyboardButtons.Add(but.name, but);
             }
         }
 
@@ -82,11 +93,12 @@ public class WordGuessManager : MonoBehaviour
             foreach (Transform letter in row)
             {
                 letter.GetComponentInChildren<TextMeshProUGUI>().color = gridLetterDefaultColor;
+                Image glow = Instantiate(hintGlow, letter.position, Quaternion.identity, letter).GetComponent<Image>();
+                glow.color = hintColor;
+                glow.gameObject.AddComponent<CanvasGroup>().alpha = 0;
+                glowImages.Add(glow);
             }
         }
-
-        //_keyboardButtons.Remove("Enter");
-        //_keyboardButtons.Remove("Back");
         OnStateChange += arg0 => print($"Switching to Game State: {arg0.ToString()}");
         //NewWord();
     }
@@ -159,10 +171,18 @@ public class WordGuessManager : MonoBehaviour
         currentWordSimplified = currentWord;
         currentWordSimplified = Regex.Replace(currentWordSimplified, @"[أ|إ|آ]", "ا");
         currentWordSimplified = Regex.Replace(currentWordSimplified, @"[ى]", "ي");
-    
+        
+        for(int i = 0; i < 5; i++)
+        {
+            lettersHinted = new() { 0, 1, 2, 3, 4 };
+        }
+
         SwitchState(InGameState.Typing);
-        GameManager.Instance.currentWord = currentWord;
+        GameManager.Instance.CurrentWord = currentWord;
+        GameManager.Instance.CurrentWordSimplified = currentWordSimplified;
         GameManager.Instance.OnNewWord?.Invoke();
+        
+        
     }
 
     private bool WordNotInDictionary()
@@ -258,9 +278,30 @@ public class WordGuessManager : MonoBehaviour
             {
                 str = "ئـ";
             }*/
-            
-            row.GetChild(row.childCount - i - 1).GetComponentInChildren<TextMeshProUGUI>().text = str;
+            Transform letter = row.GetChild(row.childCount - i - 1);
+            if (letter.GetChild(1).childCount == 1 && letter.GetChild(1).GetChild(0).gameObject.activeInHierarchy && enteredWord.Length >= i/* && str.Equals(letter.GetChild(1).GetComponentInChildren<TextMeshProUGUI>().text, StringComparison.CurrentCulture)*/)
+            {
+                if (str.Equals(""))
+                {
+                    letter.GetChild(1).DOLocalMoveY(0, 0.2f);
+                    letter.GetChild(1).GetComponent<CanvasGroup>().DOFade(1, 0.2f);
+                }
+                else
+                {
+                    letter.GetChild(1).DOLocalMoveY(250, 0.2f);
+                    letter.GetChild(1).GetComponent<CanvasGroup>().DOFade(0, 0.2f);
+                }
+                //letter.GetChild(1).GetComponent<CanvasGroup>().DOFade(0, 0.1f);
+                //letter.GetChild(1).GetComponent<Image>().DOFade(0, 0.1f);
+                //letter.GetChild(1).GetComponentInChildren<TextMeshProUGUI>().DOFade(0, 0.1f);
+            }
+            letter.GetComponentInChildren<TextMeshProUGUI>().text = str;
         }
+    }
+
+    private void Update()
+    {
+        print(enteredWord.Length);
     }
 
     public string ValidateWord(string str)
@@ -289,12 +330,13 @@ public class WordGuessManager : MonoBehaviour
             if(enteredWord[i].ToString() == currentWordSimplified[i].ToString())
             {
                 Regex regex = new Regex(Regex.Escape(currentWordSimplified[i].ToString()));
-                Image buttonImg = _keyboardButtons[enteredWord[i].ToString()].gameObject.GetComponent<Image>();
+                Image buttonImg = KeyboardButtons[enteredWord[i].ToString()].gameObject.GetComponent<Image>();
                 letterCount = regex.Replace(letterCount, "", 1);
                 //img.color = inPlaceColor;
                 buttonImg.color = inPlaceColor;
                 buttonImg.gameObject.GetComponentInChildren<TextMeshProUGUI>().color = Color.white;
-                colors.Add(inPlaceColor);
+                colors.Add(inPlaceColor); 
+                lettersHinted.Remove(i);
             } else
             {
                 notInRightPlaceImages.Add(img);
@@ -307,7 +349,7 @@ public class WordGuessManager : MonoBehaviour
         for(int i = 0; i < notInRightPlaceImages.Count; i++)
         {
             Image img = notInRightPlaceImages[i];
-            Image buttonImg = _keyboardButtons[notInRightPlaceChars[i].ToString()].gameObject.GetComponent<Image>();
+            Image buttonImg = KeyboardButtons[notInRightPlaceChars[i].ToString()].gameObject.GetComponent<Image>();
             if(letterCount.Contains(notInRightPlaceChars[i])) 
             {
                 Regex regex = new Regex(Regex.Escape(notInRightPlaceChars[i].ToString()));
@@ -346,6 +388,12 @@ public class WordGuessManager : MonoBehaviour
             {
                 im.sprite = wordImage;
                 im.gameObject.GetComponentInChildren<TextMeshProUGUI>().color = gridLetterCheckedColor;
+                if (im.transform.childCount == 3)
+                {
+                    im.transform.GetChild(2).gameObject.SetActive(false);
+                    im.transform.GetChild(1).GetComponent<Image>().DOFade(0, 0.1f);
+                }
+                
             };
             seq.Join(t2.SetDelay(0.05f));
             seq.Join(DOTween.To(() => im.color, x => im.color = x, colors[i], 0.1f).SetDelay(0.1f));
@@ -372,12 +420,6 @@ public class WordGuessManager : MonoBehaviour
         };
     }
 
-    public IEnumerator ResetTimeout(float timeout)
-    {
-        yield return new WaitForSeconds(timeout);
-        Reset();
-    }
-
     public void Reset()
     {
         if(!wordGrid) return;
@@ -390,8 +432,21 @@ public class WordGuessManager : MonoBehaviour
         foreach(Image image in images) image.color = defaultColor;
         // Resets characters
         foreach(TextMeshProUGUI tmPro in gridTMPro) tmPro.text = "";
+        
+        // Reset glow color
+        foreach (Image glow in glowImages)
+        {
+            glow.rectTransform.localPosition = new Vector3(0, 0, 0);
+            glow.color = hintColor;
+            glow.GetComponent<CanvasGroup>().alpha = 0;
+            if(glow.transform.childCount > 0)
+            {
+                glow.transform.GetChild(0).gameObject.SetActive(false);
+            }
+        }
+        EliminationCount = 0;
 
-        foreach (var btn in _keyboardButtons.Values)
+        foreach (var btn in KeyboardButtons.Values)
         {
             btn.GetComponent<Image>().color = keyboardDefaultColor;
         }
@@ -399,6 +454,8 @@ public class WordGuessManager : MonoBehaviour
         rowIndex = 0;
         enteredWord = "";
         wordGuessed = outOfTrials = false;
+        
+        enterButton.SetInteractable(false);
         
         foreach (Transform row in wordGrid)
         {

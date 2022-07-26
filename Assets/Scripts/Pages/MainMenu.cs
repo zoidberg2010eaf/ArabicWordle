@@ -28,4 +28,9 @@ public class MainMenu : Page
         GameManager.Instance.SetGameType(GameType.Daily);
         GameManager.Instance.SwitchState(GameManager.Instance.States["game"]);
     }
+    
+    private void OnEnable()
+    {
+        //GameManager.Instance.SwitchState("menu");
+    }
 }

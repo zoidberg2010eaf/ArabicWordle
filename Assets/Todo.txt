@@ -1,3 +1,0 @@
--The Message and popup of winning and losing state
--The settings popup
--The SoundManager

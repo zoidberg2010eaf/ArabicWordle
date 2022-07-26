@@ -30,5 +30,6 @@ public class Singleton<T> : MonoBehaviour where T : MonoBehaviour
 
         _instance = GetComponent<T>();
         DontDestroyOnLoad(gameObject);
+        Application.targetFrameRate = 60;
     }
 }

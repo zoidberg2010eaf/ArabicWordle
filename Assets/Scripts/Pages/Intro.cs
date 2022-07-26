@@ -15,4 +15,8 @@ public class Intro : Page
     {
         
     }
+    private void OnEnable()
+    {
+        //GameManager.Instance.SwitchState("intro");
+    }
 }

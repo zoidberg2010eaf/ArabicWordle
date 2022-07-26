@@ -11,6 +11,7 @@ public class StateManager : MonoBehaviour, IStateManageable
         {"intro", new IntroState()},
         {"menu", new MenuState()},
         {"game", new GameState()},
+        {"store", new StoreState()}
     };
     // Start is called before the first frame update
     void Start()

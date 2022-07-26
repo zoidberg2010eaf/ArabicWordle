@@ -18,7 +18,7 @@ public class WinPopup : Popup
 
     private void ChangeWord()
     {
-        currentWord.text = GameManager.Instance.currentWord;
+        currentWord.text = GameManager.Instance.CurrentWord;
     }
 
     private void ChangeScore()

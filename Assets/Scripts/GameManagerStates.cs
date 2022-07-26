@@ -41,13 +41,32 @@ public class MenuState : BaseState
     }
 }
 
+public class StoreState : BaseState
+{
+    public override void EnterState(IStateManageable stateManager)
+    {
+    }
+
+    public override void UpdateState(IStateManageable stateManager)
+    {
+    }
+
+    public override void ExitState(IStateManageable stateManager)
+    {
+    }
+    
+    public StoreState() : base("Store")
+    {
+    }
+}
+
 
 public class GameState : BaseState
 {
     //public InGameState CurrentState { get; set; } = InGameState.Typing;
     public override void EnterState(IStateManageable stateManager)
     {
-        if (GameManager.Instance.currentWord.Length == 5)
+        if (GameManager.Instance.CurrentWord.Length == 5)
         {
             return;
         }

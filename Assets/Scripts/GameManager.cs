@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Advertisements;
 using UnityEngine.Events;
 using Random = UnityEngine.Random;
 
@@ -12,16 +13,16 @@ public enum GameType
     Daily
 }
 
-
-
 public class GameManager : Singleton<GameManager>, IStateManageable
 {
+    public bool devMode = false;
     public int score;
     public int highScore;
     public GameType gameType = GameType.None;
     public WordGuessManager wordGuessManager;
-    public string currentWord { get; set; } = String.Empty;
-    public BaseState currentState { get; private set; }
+    public string CurrentWord { get; set; } = String.Empty;
+    public string CurrentWordSimplified { get; set; } = String.Empty;
+    public BaseState CurrentState { get; private set; }
 
     public Color backgroundColor;
     
@@ -30,22 +31,41 @@ public class GameManager : Singleton<GameManager>, IStateManageable
     public UnityAction OnGameWon;
     public UnityAction OnGameLost;
 
+    //Player Properties
+    public int CoinsAvailable { get; set; } = 0;
+    public int HintsAvailable { get; set; } = 6;
+    public int EliminationsAvailable { get; set; } = 6;
+    
+    public int hintLimit = 3;
+    [HideInInspector] public int timesHintUsed = 0;
+    public int eliminationLimit = 3;
+    [HideInInspector] public int timesEliminationUsed = 0;
 
+
+    
     public Dictionary<string, BaseState> States { get; } = new()
     {
         {"intro", new IntroState()},
         {"menu", new MenuState()},
         {"game", new GameState()},
+        {"store", new StoreState()}
     };
 
     
     // Start is called before the first frame update
     void Start()
     {
+        
         score = PlayerPrefs.GetInt("Score");
         highScore = PlayerPrefs.GetInt("HighScore");
         SwitchState("menu");
+        //Gley
+        //Advertisements.Instance.Initialize();
+        //Advertisements.Instance.ShowBanner(BannerPosition.BOTTOM, BannerType.SmartBanner);
+        AdsManager.Instance.InitializeAds();
         OnNewWord += RandomColor;
+        AdsManager.Instance.LoadBanner();
+        //AdsManager.Instance.ShowBanner();
     }
 
     void RandomColor()
@@ -60,12 +80,14 @@ public class GameManager : Singleton<GameManager>, IStateManageable
     // Update is called once per frame
     void Update()
     {
-        currentState.UpdateState(this);
+        CurrentState.UpdateState(this);
+        print(CurrentState.stateName);
     }
 
     public void Proceed()
     {
         PopupManager.Instance.CloseCurrentPopup();
+        timesEliminationUsed = timesHintUsed = 0;
         wordGuessManager.Reset();
     }
 
@@ -77,16 +99,16 @@ public class GameManager : Singleton<GameManager>, IStateManageable
 
     public void SwitchState(BaseState state)
     {
-        currentState?.ExitState(this);
-        currentState = state;
-        currentState.EnterState(this);
+        CurrentState?.ExitState(this);
+        CurrentState = state;
+        CurrentState.EnterState(this);
     }
     
     public void SwitchState(string state)
     {
-        currentState?.ExitState(this);
-        currentState = States[state];
-        currentState.EnterState(this);
+        CurrentState?.ExitState(this);
+        CurrentState = States[state];
+        CurrentState.EnterState(this);
     }
     
     public void SetGameType(GameType type)

@@ -41,14 +41,21 @@ public class PagesManager : Singleton<PagesManager>
     
     public void GoBack()
     {
-        if(GameManager.Instance.currentState == GameManager.Instance.States["game"])
+        if(GameManager.Instance.CurrentState == GameManager.Instance.States["game"])
         {
             GameManager.Instance.SwitchState("menu");
         }
-        else
+        else if (GameManager.Instance.CurrentState == GameManager.Instance.States["store"])
         {
-            FlipPage(previousPage);
+            if(previousPage == pages[0])
+            {
+                GameManager.Instance.SwitchState("menu");
+            }
+            else if(previousPage == pages[1])
+            {
+                GameManager.Instance.SwitchState("game");
+            }
         }
-        FlipPage(previousPage);
+        FlipPage(currentPage != pages[1] ? previousPage : pages[0]);
     }
 }
